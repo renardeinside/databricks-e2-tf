@@ -31,7 +31,7 @@ variable "aws_cidr_block" {
   default = "10.4.0.0/16"
 }
 
-variable "databricks_account_name" {
+variable "aws_common_prefix" {
   description = "Account name in Databricks"
 }
 variable "databricks_workspace_name" {
@@ -55,7 +55,7 @@ variable "databricks_password" {
 // --------------------------------------------------
 
 locals {
-  aws_prefix = "${var.databricks_account_name}-${var.databricks_workspace_name}"
+  aws_prefix = "${var.aws_common_prefix}-${var.databricks_workspace_name}"
 }
 
 // --------------------------------------------------

@@ -1,13 +1,13 @@
 // AWS related vars
 aws_region="your-aws-region" // Your AWS Region
+aws_common_prefix="some-prefix" // this prefix will be used during AWS objects creation, naming and tagging. No dash symbol at the end is required.
 
 // Databricks related vars
 databricks_account_id="your-account-id" // your account id, can be foun in bottom left corner after log into https://accounts.cloud.databricks.com/
 databricks_username="your-email" // your email used for log into https://accounts.cloud.databricks.com/
 databricks_password="your-databricks-password" // your password used for log into https://accounts.cloud.databricks.com/
-databricks_account_name="your-account-name-from-SA" // this account name will be provided by your SA
-databricks_workspace_name="main" // this is just an example name, you can use "dev" or "prod"
+databricks_workspace_name="main" // this is just an example name, you can use "dev" or "prod". No dash symbol at the end is required.
 
 // Common info:
-// `${databricks_account_name}-${databricks_workspace_name}` will be also used as prefix for object naming in AWS
+// `${aws_common_prefix}-${databricks_workspace_name}` will be also used as prefix for object naming in AWS
 // your full workspace URL will look like this: http://`${databricks_account_name}-${databricks_workspace_name}`.cloud.databricks.com
