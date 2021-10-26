@@ -1,4 +1,4 @@
-## Example terraform code for deploying a Databricks E2 workspace
+## Example Terraform code for deploying a Databricks E2 workspace
 
 Please remember, these configurations are needed for **workspace creation**. 
 
