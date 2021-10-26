@@ -21,7 +21,8 @@ terraform plan -var-file=.tfvars
 terraform apply -var-file=.tfvars
 ```
 
-After the deployment, you'll see the databricks host in the output.
+After the deployment, you'll see the databricks host in the output. 
+For the first log in as administrator, please use the same email and password as for https://accounts.cloud.databricks.com/. 
 
 Please note the following:
 - VPC permissions might be too extensive depending on your environment. You can add more limitations to the existing configuration.
