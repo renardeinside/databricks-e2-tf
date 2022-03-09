@@ -5,7 +5,7 @@ terraform {
   required_providers {
     databricks = {
       source  = "databrickslabs/databricks"
-      version = "0.3.7"
+      version = "0.5.2"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -29,6 +29,7 @@ variable "aws_region" {
 
 variable "aws_cidr_block" {
   default = "10.4.0.0/16"
+  // each worker requires at least 2 IP addresses, please take this into account while planning the CIDR
 }
 
 variable "aws_common_prefix" {
@@ -48,6 +49,11 @@ variable "databricks_username" {
 
 variable "databricks_password" {
   description = "Password you use to login to https://accounts.cloud.databricks.com/"
+}
+
+variable "databricks_workspace_tier" {
+  description = "Databricks workspace tier"
+  default = "PREMIUM"
 }
 
 // --------------------------------------------------
@@ -118,21 +124,27 @@ module "vpc" {
   enable_nat_gateway   = true
   create_igw           = true
 
-  public_subnets = [cidrsubnet(var.aws_cidr_block, 3, 0)]
-  private_subnets = [cidrsubnet(var.aws_cidr_block, 3, 1),
-  cidrsubnet(var.aws_cidr_block, 3, 2)]
+  public_subnets  = [cidrsubnet(var.aws_cidr_block, 3, 0)]
+  private_subnets = [
+    cidrsubnet(var.aws_cidr_block, 3, 1),
+    cidrsubnet(var.aws_cidr_block, 3, 2)
+  ]
 
   manage_default_security_group = true
   default_security_group_name   = "${local.aws_prefix}-sg"
 
-  default_security_group_egress = [{
-    cidr_blocks = "0.0.0.0/0"
-  }]
+  default_security_group_egress = [
+    {
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
 
-  default_security_group_ingress = [{
-    description = "Allow all internal TCP and UDP"
-    self        = true
-  }]
+  default_security_group_ingress = [
+    {
+      description = "Allow all internal TCP and UDP"
+      self        = true
+    }
+  ]
 }
 
 module "vpc_endpoints" {
@@ -144,11 +156,12 @@ module "vpc_endpoints" {
 
   endpoints = {
     s3 = {
-      service      = "s3"
-      service_type = "Gateway"
+      service         = "s3"
+      service_type    = "Gateway"
       route_table_ids = flatten([
         module.vpc.private_route_table_ids,
-      module.vpc.public_route_table_ids])
+        module.vpc.public_route_table_ids
+      ])
       tags = {
         Name = "${local.aws_prefix}-s3-vpc-endpoint"
       }
@@ -157,7 +170,7 @@ module "vpc_endpoints" {
       service             = "sts"
       private_dns_enabled = true
       subnet_ids          = module.vpc.private_subnets
-      tags = {
+      tags                = {
         Name = "${local.aws_prefix}-sts-vpc-endpoint"
       }
     },
@@ -165,7 +178,7 @@ module "vpc_endpoints" {
       service             = "kinesis-streams"
       private_dns_enabled = true
       subnet_ids          = module.vpc.private_subnets
-      tags = {
+      tags                = {
         Name = "${local.aws_prefix}-kinesis-vpc-endpoint"
       }
     },
@@ -187,7 +200,7 @@ resource "aws_s3_bucket" "root_storage_bucket" {
     enabled = false
   }
   force_destroy = true
-  tags = merge(var.tags, {
+  tags          = merge(var.tags, {
     Name = "${local.aws_prefix}-rootbucket"
   })
 }
@@ -242,7 +255,8 @@ resource "databricks_mws_storage_configurations" "this" {
 
 resource "time_sleep" "wait_for_iam_role" {
   depends_on = [
-  aws_iam_role.cross_account_role]
+    aws_iam_role.cross_account_role
+  ]
   create_duration = "10s"
 }
 
@@ -257,11 +271,19 @@ resource "databricks_mws_workspaces" "this" {
   storage_configuration_id = databricks_mws_storage_configurations.this.storage_configuration_id
   network_id               = databricks_mws_networks.this.network_id
 
+  pricing_tier = var.databricks_workspace_tier
+
   depends_on = [
     time_sleep.wait_for_iam_role
   ]
+  token {}
 }
 
 output "databricks_host" {
   value = databricks_mws_workspaces.this.workspace_url
+}
+
+output "databricks_token" {
+  value     = databricks_mws_workspaces.this.token[0].token_value
+  sensitive = true
 }
